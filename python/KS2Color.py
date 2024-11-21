@@ -25,21 +25,27 @@ wavelengths = data['wavelength'].values
 # Equal wavelength intervals
 delta_lambda = wavelengths[1] - wavelengths[0]
 
+def gamma_correct(c):
+    return pow(c, 1 / 2.2)
+# def gamma_correct(c):
+#     if c <= 0.0031308:
+#         return 12.92 * c
+#     else:
+#         return 1.055 * pow(c, 1/2.4) - 0.055
+
 # Function to convert XYZ to sRGB
-def xyz_to_rgb(X, Y, Z):
+def xyz_to_srgb(X, Y, Z):
     # sRGB conversion matrix
     M = np.array([[3.2406, -1.5372, -0.4986],
                   [-0.9689,  1.8758,  0.0415],
                   [0.0557, -0.2040,  1.0570]])
+    
     # Convert XYZ to linear RGB
     RGB_lin = np.dot(M, [X, Y, Z])
-    # Clip values to [0, 1]
-    RGB_lin = np.clip(RGB_lin, 0, 1)
 
     # Gamma correction
-    def gamma_correct(c):
-        return pow(c, 1 / 2.2)
     RGB = [gamma_correct(c) for c in RGB_lin]
+
     return np.clip(RGB, 0, 1)
 
 # Initialize plot
@@ -82,14 +88,14 @@ for i, (pigment_name, pigment_key) in enumerate(pigment_mapping.items()):
     Z = Z_num / Y_norm
 
     # Convert to sRGB
-    RGB = xyz_to_rgb(X, Y, Z)
+    sRGB = xyz_to_srgb(X, Y, Z)
 
     # Display the sRGB values
-    print(f"sRGB values for {pigment_name}: {RGB}")
+    # print(f"sRGB values for {pigment_name}: {sRGB}")
 
     # Plot the color
     plt.subplot(3, 4, i + 1)
-    plt.imshow([[(RGB[0], RGB[1], RGB[2])]])
+    plt.imshow([[(sRGB[0], sRGB[1], sRGB[2])]])
     plt.axis('off')
     plt.title(pigment_name)
 

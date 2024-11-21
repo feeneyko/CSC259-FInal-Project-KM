@@ -72,51 +72,6 @@ function togglePigmentSelection(element) {
     });
 }
 
-// Calculate the RGB color for a given pigment
-// function calculateColor(pigmentName) {
-
-//     const pigment_mapping = {
-//         'White': 'white',
-//         'Black': 'black',
-//         'Cobalt Blue': 'cobalt b',
-//         'Quinacridone Magenta': 'quinacridone Magenta',
-//         'Phthalo Blue (Green Shade)': 'phthalo blue (green shade)',
-//         'Hansa Yellow': 'hansa Yellow',
-//         'Phthalo Green': 'phthalo Green',
-//         'Pyrrole Red': 'pyrrole Red',
-//         'Ultramarine Blue': 'ultramarine Blue',
-//         'Dioxazine Purple': 'dioxazine Purple',
-//         'Pyrrole Orange': 'pyrrole Orange'
-//     };
-//     const pigment = pigment_mapping[pigmentName];
-
-//     const k_col = `k ${pigment}`;
-//     const s_col = `s ${pigment}`;
-
-//     const K = pigmentData.map(row => row[k_col]);
-//     const S = pigmentData.map(row => row[s_col]);
-//     const wavelengths = pigmentData.map(row => row.wavelength);
-//     const ks_ratio = K.map((k, i) => k / S[i]);
-//     const R_inf = ks_ratio.map(ks => 1 + ks - Math.sqrt(ks * (ks + 2))).map(r => Math.min(Math.max(r, 0), 1));
-
-//     const x_bar = pigmentData.map(row => row.x_bar);
-//     const y_bar = pigmentData.map(row => row.y_bar);
-//     const z_bar = pigmentData.map(row => row.z_bar);
-//     const I = pigmentData.map(row => row.power);
-//     const delta_lambda = wavelengths[1] - wavelengths[0];
-
-//     const X_num = R_inf.reduce((acc, R, i) => acc + R * I[i] * x_bar[i], 0) * delta_lambda;
-//     const Y_num = R_inf.reduce((acc, R, i) => acc + R * I[i] * y_bar[i], 0) * delta_lambda;
-//     const Z_num = R_inf.reduce((acc, R, i) => acc + R * I[i] * z_bar[i], 0) * delta_lambda;
-//     const Y_norm = I.reduce((acc, I, i) => acc + I * y_bar[i], 0) * delta_lambda;
-
-//     const X = X_num / Y_norm;
-//     const Y = Y_num / Y_norm;
-//     const Z = Z_num / Y_norm;
-
-//     return xyz_to_rgb(X, Y, Z);
-// }
-
 function calculateColor(pigments, ratios = [1]) {
     // Mapping of pigment names to column names in the pigment data
     const pigment_mapping = {
@@ -184,6 +139,15 @@ function calculateColor(pigments, ratios = [1]) {
     return xyz_to_rgb(X, Y, Z);
 }
 
+function gammaCorrect(c) {
+    return Math.pow(c, 1 / 2.2);
+}
+
+function inverseGammaCorrect(c) {
+    return Math.pow(c, 2.2);
+}
+
+
 // Mix colors based on selected pigments and given ratios
 function mixColors() {
     const selectedElements = document.querySelectorAll('.pigment-box.selected');
@@ -201,11 +165,13 @@ function mixColors() {
     let totalRatio = ratios.reduce((sum, r) => sum + r, 0);
 
     selectedPigments.forEach((pigment, index) => {
-        const rgb = calculateColor(pigment);
+        const rgb = calculateColor(pigment).map(c => c / 255).map(inverseGammaCorrect);
         mixedRGB[0] += rgb[0] * (ratios[index] / totalRatio);
         mixedRGB[1] += rgb[1] * (ratios[index] / totalRatio);
         mixedRGB[2] += rgb[2] * (ratios[index] / totalRatio);
     });
+
+    mixedRGB = mixedRGB.map(gammaCorrect).map(c => Math.round(c * 255));
 
     displayMixedColor(mixedRGB.map(Math.round));
     displayMixedColorKM(calculateColor(selectedPigments, ratios));
@@ -237,10 +203,6 @@ function xyz_to_rgb(X, Y, Z) {
 
     let [r, g, b] = [0, 1, 2].map(i => M[i][0] * X + M[i][1] * Y + M[i][2] * Z);
     [r, g, b] = [r, g, b].map(c => Math.max(0, Math.min(1, c)));
-
-    function gammaCorrect(c) {
-        return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
-    }
 
     return [r, g, b].map(gammaCorrect).map(c => Math.round(c * 255));
 }

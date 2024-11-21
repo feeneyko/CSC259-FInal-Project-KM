@@ -3,7 +3,7 @@ gamma correction
 
 1) How does one name correspond to a RGB value?
     'White',
-    'Black',
+'Black',
     'Cobalt Blue',
     'Quinacridone Magenta',
 'Phthalo Blue (Green Shade)',
