@@ -66,10 +66,19 @@ function togglePigmentSelection(element) {
         ratioField.id = `ratio-${selectedPigmentName}`;
         ratioField.innerHTML = `
             <label>${selectedPigmentName} Ratio:</label>
-            <input type="number" class="pigment-ratio" data-pigment="${selectedPigmentName}" min="0" value="1" style="width: 50px; margin-left: 5px;">
+            <input type="number" class="pigment-ratio" data-pigment="${selectedPigmentName}" min="0" value="1" style="width: 50px; margin-left: 5px; margin-top: 4px;" placeholder="0">
         `;
         selectedPigmentsContainer.appendChild(ratioField);
     });
+
+    if (selectedElements.length > 2) {
+        const dotsizeContainer = document.getElementById('dotsize-input-div');
+        dotsizeContainer.innerHTML = 
+        `
+            <label for="dotsize-input">Enter Dot Size:</label>
+            <input type="number" id="dotsize-input" value="8">
+        `;
+    }
 }
 
 function calculateColor(pigments, ratios = [1]) {
@@ -140,41 +149,244 @@ function calculateColor(pigments, ratios = [1]) {
 }
 
 function gammaCorrect(c) {
-    return Math.pow(c, 1 / 2.2);
+    if (c <= 0) {
+        return 0;
+    } else if (c <= 0.0031308) {
+        return 12.92 * c;
+    } else if (c < 1) {
+        return 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+    } else {
+        return 1;
+    }
 }
 
 function inverseGammaCorrect(c) {
     return Math.pow(c, 2.2);
 }
 
-
 // Mix colors based on selected pigments and given ratios
 function mixColors() {
     const selectedElements = document.querySelectorAll('.pigment-box.selected');
     const selectedPigments = Array.from(selectedElements).map(el => el.dataset.pigment);
+    
+    if (selectedPigments.length < 2) {
+        alert("Please select (click) at least two pigments to mix.");
+        return;
+    }
 
     const ratioFields = document.querySelectorAll('.pigment-ratio');
     const ratios = Array.from(ratioFields).map(input => Number(input.value));
 
-    if (selectedPigments.length !== ratios.length) {
-        alert("Please ensure that all selected pigments have a ratio.");
-        return;
-    }
+    console.log(selectedPigments, ratios);
 
     let mixedRGB = [0, 0, 0];
     let totalRatio = ratios.reduce((sum, r) => sum + r, 0);
 
+    // RGB Light Mixing
     selectedPigments.forEach((pigment, index) => {
         const rgb = calculateColor(pigment).map(c => c / 255).map(inverseGammaCorrect);
         mixedRGB[0] += rgb[0] * (ratios[index] / totalRatio);
         mixedRGB[1] += rgb[1] * (ratios[index] / totalRatio);
         mixedRGB[2] += rgb[2] * (ratios[index] / totalRatio);
     });
-
     mixedRGB = mixedRGB.map(gammaCorrect).map(c => Math.round(c * 255));
-
-    displayMixedColor(mixedRGB.map(Math.round));
+    displayMixedColor(mixedRGB);
+    
     displayMixedColorKM(calculateColor(selectedPigments, ratios));
+}
+
+function calculateGamut() {
+    const stepsInput = document.getElementById('fraction-input');
+    const dotsizeInput = document.getElementById('dotsize-input');
+
+    const selectedElements = document.querySelectorAll('.pigment-box.selected');
+    const selectedPigments = Array.from(selectedElements).map(el => el.dataset.pigment);
+    
+    if (selectedPigments.length < 2) {
+        alert("Please select at least two pigments to calculate the gamut.");
+        return;
+    } else if (selectedPigments.length == 2) {
+        let steps = parseInt(stepsInput.value);
+        const combinations = generateRatioCombinations(selectedPigments.length, steps);
+
+        // For each combination, calculate the color
+        const colors = combinations.map(ratios => {
+            const rgb = calculateColor(selectedPigments, ratios);
+            return {
+                rgb: rgb,
+                ratios: ratios
+            };
+        });
+        displayGamut(colors, selectedPigments, steps);
+    } else if (selectedPigments.length == 3) {
+        let steps = parseInt(stepsInput.value);
+        let dotsize = parseInt(dotsizeInput.value);
+        // Generate combinations of ratios for three pigments
+        const combinations = generateRatioCombinations(3, steps);
+
+        // For each combination, calculate the color
+        const colors = combinations.map(ratios => {
+            const rgb = calculateColor(selectedPigments, ratios);
+            return {
+                rgb: rgb,
+                ratios: ratios
+            };
+        });
+        // Display the gamut using a ternary plot
+        displayGamut(colors, selectedPigments, dotsize);
+    } else {
+        alert("Please select at most three pigments to calculate the gamut.");
+        return;
+    }
+}
+
+// Function to generate all combinations of ratios that sum to 1
+function generateRatioCombinations(n, steps) {
+    const combinations = [];
+
+    if (n == 2) {
+        // Existing code for two pigments
+        for (let i = 0; i <= steps; i++) {
+            const ratio1 = i / steps;
+            const ratio2 = (steps - i) / steps;
+            combinations.push([ratio1, ratio2]);
+        }
+    } else if (n == 3) {
+        // Generate combinations for three pigments
+        for (let i = 0; i <= steps; i++) {
+            for (let j = 0; j <= steps - i; j++) {
+                const k = steps - i - j;
+                const ratio1 = i / steps;
+                const ratio2 = j / steps;
+                const ratio3 = k / steps;
+                combinations.push([ratio1, ratio2, ratio3]);
+            }
+        }
+    } else {
+        // For n != 2 or 3, return an empty array
+        return [];
+    }
+
+    return combinations;
+}
+
+// Function to display the gamut of colors for three pigments using a ternary plot
+function displayGamut(colors, selectedPigments, dotsize) {
+    const gamutContainer = document.getElementById('gamut-container');
+    gamutContainer.innerHTML = ''; // Clear previous content
+
+    if (selectedPigments.length == 2) {
+        // Existing code for two pigments
+        colors.forEach(colorObj => {
+            const colorDiv = document.createElement('div');
+            colorDiv.style.width = '40px';
+            colorDiv.style.height = '40px';
+            colorDiv.style.display = 'inline-block';
+            colorDiv.style.margin = '1px';
+            const [r, g, b] = colorObj.rgb;
+            colorDiv.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+            
+            const ratioDiv = document.createElement('div');
+            ratioDiv.style.fontSize = '16px';
+            ratioDiv.style.textAlign = 'center';
+            ratioDiv.innerHTML = colorObj.ratios.map(r => `<div>${r.toFixed(2)}</div>`).join('');
+
+            const containerDiv = document.createElement('div');
+            containerDiv.style.display = 'inline-block';
+            containerDiv.style.margin = '5px';
+            containerDiv.appendChild(colorDiv);
+            containerDiv.appendChild(ratioDiv);
+
+            gamutContainer.appendChild(containerDiv);
+        });
+    } else if (selectedPigments.length == 3) {
+        // Create a canvas for the ternary plot
+        const canvas = document.createElement('canvas');
+        const canvasWidth = 500;
+        const canvasHeight = Math.floor(canvasWidth * Math.sqrt(3) / 2);
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        const ctx = canvas.getContext('2d');
+
+        // Draw the ternary plot background (triangle)
+        drawTernaryBackground(ctx, canvasWidth, canvasHeight, selectedPigments);
+
+        // Plot each color point on the ternary plot
+        colors.forEach(colorObj => {
+            const [r, g, b] = colorObj.rgb;
+            const ratios = colorObj.ratios;
+
+            // Convert ternary ratios to Cartesian coordinates
+            const [x, y] = ternaryToCartesian(ratios, canvasWidth, canvasHeight);
+
+            // TODO: Color point size based on ratio
+            // TODO: make the color point clickable to display the ratios
+            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+            ctx.beginPath();
+            // ctx.arc(x, y, 2, 0, 2 * Math.PI); // Use y directly
+            ctx.arc(x, canvasHeight - y, dotsize, 0, 2 * Math.PI); // Invert y-axis
+            ctx.fill();
+        });
+
+        gamutContainer.appendChild(canvas);
+    }
+}
+
+// Function to convert ternary ratios to Cartesian coordinates
+// function ternaryToCartesian(ratios, canvasWidth, canvasHeight) {
+//     const [a, b, c] = ratios;
+
+//     // Calculate x coordinate
+//     const x = a * 0 + b * canvasWidth + c * (canvasWidth / 2);
+
+//     // Calculate y coordinate (inverted to match canvas coordinates)
+//     const y = canvasHeight - c * canvasHeight;
+
+//     return [x, y];
+// }
+
+function ternaryToCartesian(ratios, canvasWidth, canvasHeight, padding = 34) {
+    const [a, b, c] = ratios;
+    const sum = a + b + c || 1; // Prevent division by zero
+    const x = (0.5 * (2 * b + c)) / sum;
+    const y = (Math.sqrt(3) / 2) * c / sum;
+
+    // Scale to canvas size with padding
+    const effectiveWidth = canvasWidth - 2 * padding;
+    const effectiveHeight = canvasHeight - 2 * padding;
+
+    const scaledX = padding + x * effectiveWidth;
+    const scaledY = padding + y * effectiveHeight / (Math.sqrt(3) / 2);
+
+    return [scaledX, scaledY];
+}
+
+// Function to draw the ternary plot background and labels
+function drawTernaryBackground(ctx, canvasWidth, canvasHeight, pigmentNames) {
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+
+    // Label positions
+    const fontSize = 14;
+    ctx.font = `${fontSize}px Arial`;
+    ctx.fillStyle = '#000';
+
+    // Left corner (Pigment A)
+    const colorA = calculateColor(pigmentNames[0]);
+    ctx.fillStyle = `rgb(${colorA[0]}, ${colorA[1]}, ${colorA[2]})`;
+    ctx.fillText(pigmentNames[0], 0, canvasHeight);
+
+    // Right corner (Pigment B)
+    const colorB = calculateColor(pigmentNames[1]);
+    ctx.fillStyle = `rgb(${colorB[0]}, ${colorB[1]}, ${colorB[2]})`;
+    const textWidthB = ctx.measureText(pigmentNames[1]).width;
+    ctx.fillText(pigmentNames[1], canvasWidth - textWidthB, canvasHeight);
+
+    // Top corner (Pigment C)
+    const colorC = calculateColor(pigmentNames[2]);
+    ctx.fillStyle = `rgb(${colorC[0]}, ${colorC[1]}, ${colorC[2]})`;
+    const textWidthC = ctx.measureText(pigmentNames[2]).width;
+    ctx.fillText(pigmentNames[2], (canvasWidth / 2) - (textWidthC / 2), fontSize);
 }
 
 // Display the mixed color
@@ -191,7 +403,6 @@ function displayMixedColorKM(rgb) {
     const colorInfoKM = document.getElementById('KM-mixed-color-info');
     colorInfoKM.textContent = `Mixed sRGB values: ${rgb[0]}, ${rgb[1]}, ${rgb[2]}`;
 }
-
 
 // Convert XYZ values to sRGB
 function xyz_to_rgb(X, Y, Z) {

@@ -26,12 +26,12 @@ wavelengths = data['wavelength'].values
 delta_lambda = wavelengths[1] - wavelengths[0]
 
 def gamma_correct(c):
-    return pow(c, 1 / 2.2)
-# def gamma_correct(c):
-#     if c <= 0.0031308:
-#         return 12.92 * c
-#     else:
-#         return 1.055 * pow(c, 1/2.4) - 0.055
+    if c <= 0:
+        return 0
+    elif c <= 0.0031308:
+        return 12.92 * c
+    else:
+        return 1.055 * (c ** (1 / 2.4)) - 0.055
 
 # Function to convert XYZ to sRGB
 def xyz_to_srgb(X, Y, Z):
