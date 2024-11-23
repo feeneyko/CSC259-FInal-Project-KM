@@ -43,12 +43,10 @@
 
     <!-- Display the Gamut made by selected color -->
     <div style="margin-top: 20px;">
-        <h2>Gamut with Selected Pigments</h2>
-        <div>
-            <label for="fraction-input">Enter Fraction:</label>
-            <input type="number" id="fraction-input" value="35">
-        </div>
-        <div id="dotsize-input-div" style="margin-top: 5px;"></div>
+        <h1>Gamut with Selected Pigments</h1>
+        <div id="fraction-input-div"></div>
+        <div id="dotsize-xychromaticity-input-div" style="margin-top: 5px;"></div>
+        <div id="dotsize-triangle-input-div" style="margin-top: 5px;"></div>
         <button onclick="calculateGamut()" style="margin-top: 5px;">Calculate Gamut</button>
         <div id="gamut-container" style="margin-top: 20px;"></div>
     </div>
