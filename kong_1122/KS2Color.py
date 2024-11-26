@@ -1,4 +1,4 @@
-# Calculate the Reflectance based on Scattering and Absorption
+# Calculate the Color based on Scattering and Absorption
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
