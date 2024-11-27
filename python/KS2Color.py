@@ -66,6 +66,10 @@ for i, (pigment_name, pigment_key) in enumerate(pigment_mapping.items()):
     # Compute reflectance R(λ) using Kubelka-Munk theory
     Q = np.sqrt(ks_ratio * (ks_ratio + 2))
     R_inf = 1 + ks_ratio - Q
+
+    if np.any(R_inf < 0) or np.any(R_inf > 1):
+        print(f"Clipping occurred for {pigment_name}: R_inf = {R_inf}")
+    
     R_inf = np.clip(R_inf, 0, 1)
 
     # Extract color matching functions and illuminant data
