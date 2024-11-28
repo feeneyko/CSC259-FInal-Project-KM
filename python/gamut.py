@@ -20,7 +20,7 @@ pigment_mapping = {
 }
 
 # Load data
-data = pd.read_csv('data/prepared_data.csv')
+data = pd.read_csv('data/LEGACY_prepared_data.csv')
 wavelengths = data['wavelength'].values
 # Extract color matching functions and illuminant data
 x_bar = data['x_bar'].values
