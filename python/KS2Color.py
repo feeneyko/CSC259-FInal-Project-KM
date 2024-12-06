@@ -33,6 +33,9 @@ def gamma_correct(c):
     else:
         return 1.055 * (c ** (1 / 2.4)) - 0.055
 
+# def gamma_correct(c):
+#     return c ** (1 / 2.2)
+
 # Function to convert XYZ to sRGB
 def xyz_to_srgb(X, Y, Z):
     # sRGB conversion matrix
