@@ -93,6 +93,7 @@ for i, (pigment_name, pigment_key) in enumerate(pigment_mapping.items()):
     X = X_num / Y_norm
     Y = Y_num / Y_norm
     Z = Z_num / Y_norm
+    # print(f"XYZ values for {pigment_name}: {X}, {Y}, {Z}")
 
     # Convert to sRGB
     sRGB = xyz_to_srgb(X, Y, Z)

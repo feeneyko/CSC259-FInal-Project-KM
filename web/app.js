@@ -185,7 +185,7 @@ function updateGamutContainers(fractionValue, dotSizeXYValue, dotSizeTValue) {
             <label for="dotsize-xychromaticity-input">Dot Size for XY Chromaticity Diagram:</label>
             <input type="number" id="dotsize-xychromaticity-input" value="${dotSizeXYValue}">
             <br>
-            <label for="toggle-gamut-boundary">Colorful Gamut Boundary:</label>
+            <label for="toggle-gamut-boundary">Gamut Boundary:</label>
             <select id="toggle-gamut-boundary">
                 <option value="no">No</option>
                 <option value="black">Black</option>
